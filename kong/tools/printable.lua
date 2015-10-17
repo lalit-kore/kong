@@ -14,7 +14,7 @@ function printable_mt:__tostring()
       v = table.concat(v, ",")
     end
 
-    table.insert(t, k.."="..tostring(v))
+    table.insert(t, (type(k) == "string" and k.."=" or "")..tostring(v))
   end
   return table.concat(t, " ")
 end

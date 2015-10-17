@@ -1,6 +1,36 @@
 local crud = require "kong.api.crud_helpers"
 
 return {
+  ["/oauth2_tokens/"] = {
+    GET = function(self, dao_factory, helpers)
+      crud.paginated_set(self, dao_factory.oauth2_tokens)
+    end
+  },
+
+  ["/oauth2_tokens/:id"] = {
+    before = function(self, dao_factory, helpers)
+      local err
+      self.oauth2_token, err = dao_factory.oauth2_tokens:find_by_primary_key({ id = self.params.id })
+      if err then
+        return helpers.yield_error(err)
+      elseif not self.oauth2_token then
+        return helpers.responses.send_HTTP_NOT_FOUND()
+      end
+    end,
+
+    GET = function(self, dao_factory, helpers)
+      return helpers.responses.send_HTTP_OK(self.oauth2_token)
+    end,
+
+    PATCH = function(self, dao_factory)
+      crud.patch(self.params, self.oauth2_token, dao_factory.oauth2_tokens)
+    end,
+
+    DELETE = function(self, dao_factory)
+      crud.delete(self.oauth2_token, dao_factory.oauth2_tokens)
+    end
+  },
+
   ["/oauth2/"] = {
     GET = function(self, dao_factory, helpers)
       crud.paginated_set(self, dao_factory.oauth2_credentials)

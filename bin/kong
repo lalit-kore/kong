@@ -10,19 +10,20 @@
 -- This script is not parsed by lapp due to limitations of the said framework as it
 -- is currently implemented.
 
-local cutils = require "kong.cli.utils"
-local infos = cutils.get_kong_infos()
+local luarocks = require "kong.cli.utils.luarocks"
+local infos = luarocks.get_kong_infos()
 local commands = {
-  db = "kong.cli.db",
-  stop = "kong.cli.stop",
-  quit = "kong.cli.quit",
-  start = "kong.cli.start",
-  reload = "kong.cli.reload",
-  config = "kong.cli.config",
-  restart = "kong.cli.restart",
-  version = "kong.cli.version",
-  ["--version"] = "kong.cli.version",
-  migrations = "kong.cli.migrations"
+  db = "kong.cli.cmds.db",
+  stop = "kong.cli.cmds.stop",
+  quit = "kong.cli.cmds.quit",
+  start = "kong.cli.cmds.start",
+  reload = "kong.cli.cmds.reload",
+  config = "kong.cli.cmds.config",
+  restart = "kong.cli.cmds.restart",
+  version = "kong.cli.cmds.version",
+  ["--version"] = "kong.cli.cmds.version",
+  migrations = "kong.cli.cmds.migrations",
+  cluster = "kong.cli.cmds.cluster"
 }
 
 local help_message = string.format([[

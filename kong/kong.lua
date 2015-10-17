@@ -29,6 +29,7 @@ local utils = require "kong.tools.utils"
 local dao_loader = require "kong.tools.dao_loader"
 local config_loader = require "kong.tools.config_loader"
 local plugins_iterator = require "kong.core.plugins_iterator"
+local Events = require "kong.core.events"
 
 local ipairs = ipairs
 local table_insert = table.insert
@@ -89,6 +90,24 @@ local function load_node_plugins(configuration)
   return sorted_plugins
 end
 
+--- Attach a hooks table to the event bus
+local function attach_hooks(events, hooks)
+  for k, v in pairs(hooks) do
+    events:subscribe(k, v)
+  end
+end
+
+--- Attach plugin hooks to event bus
+-- Subscribe every event in the hooks.lua for every plugin to the event bus
+local function attach_plugins_hooks(events, plugins)
+  for _, plugin in ipairs(plugins) do
+    local loaded, plugin_hooks = utils.load_module_if_exists("kong.plugins."..plugin.name..".hooks")
+    if loaded then
+      attach_hooks(events, plugin_hooks)
+    end
+  end
+end
+
 --- Kong public context handlers.
 -- @section kong_handlers
 
@@ -107,8 +126,16 @@ local Kong = {}
 -- it will be thrown and needs to be catched in `init_by_lua`.
 function Kong.init()
   configuration = config_loader.load(os.getenv("KONG_CONF"))
-  dao = dao_loader.load(configuration)
+  events = Events()
+  dao = dao_loader.load(configuration, events)
   loaded_plugins = load_node_plugins(configuration)
+
+  -- Attach hooks for every plugin
+  attach_plugins_hooks(events, loaded_plugins)
+
+  -- Attach core hook
+  attach_hooks(events, require("kong.core.hooks"))
+
   ngx.update_time()
 end
 

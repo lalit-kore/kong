@@ -2,8 +2,7 @@
 
 local Faker = require "kong.tools.faker"
 local constants = require "kong.constants"
-local cutils = require "kong.cli.utils"
-local config = require "kong.tools.config_loader"
+local logger = require "kong.cli.utils.logger"
 local dao = require "kong.tools.dao_loader"
 local lapp = require("lapp")
 
@@ -29,30 +28,31 @@ if args.command == "db" then
   lapp.quit("Missing required <command>.")
 end
 
-local config_path = cutils.get_kong_config_path(args.config)
-local config = config.load(config_path)
-local dao_factory = dao.load(config)
+local parsed_config = require("kong.cli.services.nginx")(args.config).parsed_config
+local dao_factory = dao.load(parsed_config)
 
 if args.command == "seed" then
 
   -- Drop if exists
   local err = dao_factory:drop()
   if err then
-    cutils.logger:error_exit(err)
+    logger:error(err)
+    os.exit(1)
   end
 
   local faker = Faker(dao_factory)
   faker:seed(args.random and args.number or nil)
-  cutils.logger:success("Populated")
+  logger:success("Populated")
 
 elseif args.command == "drop" then
 
   local err = dao_factory:drop()
   if err then
-    cutils.logger:error_exit(err)
+    logger:error(err)
+    os.exit(1)
   end
 
-  cutils.logger:success("Dropped")
+  logger:success("Dropped")
 
 else
   lapp.quit("Invalid command: "..args.command)

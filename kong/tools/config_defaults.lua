@@ -27,6 +27,19 @@ return {
       }
     }
   },
+  ["cluster"] = {
+    type = "table",
+    content = {
+      ["auto-join"] = {type = "boolean", default = true},
+      ["profile"] = {type = "string", default = "lan", enum = { "lan", "local", "wan" }},
+      ["bind"] = {type = "string", default = "0.0.0.0:7946"},
+      ["iface"] = {type = "string", nullable = true},
+      ["rpc-addr"] = {type = "string", default = "127.0.0.1:7373"},
+      ["advertise"] = {type = "string", nullable = true},
+      ["encrypt"] = {type = "string", nullable = true},
+      ["tags"] = {type = "table", default = {}, nullable = true}
+    }
+  },
   ["database"] = {type = "string", default = "cassandra"},
   ["databases_available"] = {
     type = "table",
@@ -50,10 +63,9 @@ return {
       }
     }
   },
-  ["database_cache_expiration"] = {type = "number", default = 5},
   ["ssl_cert_path"] = {type = "string", nullable = true},
   ["ssl_key_path"] = {type = "string", nullable = true},
-  ["send_anonymous_reports"] = {type = "boolean", default = false},
+  ["send_anonymous_reports"] = {type = "boolean", default = true},
   ["memory_cache_size"] = {type = "number", default = 128, min = 32},
   ["nginx"] = {type = "string", nullable = true}
 }

@@ -1,7 +1,7 @@
 local yaml = require "yaml"
 local IO = require "kong.tools.io"
 local utils = require "kong.tools.utils"
-local cutils = require "kong.cli.utils"
+local logger = require "kong.cli.utils.logger"
 local stringy = require "stringy"
 local constants = require "kong.constants"
 local config_defaults = require "kong.tools.config_defaults"
@@ -92,7 +92,8 @@ end
 function _M.load(config_path)
   local config_contents = IO.read_file(config_path)
   if not config_contents then
-    cutils.logger:error_exit("No configuration file at: "..config_path)
+    logger:error("No configuration file at: "..config_path)
+    os.exit(1)
   end
 
   local config = yaml.load(config_contents)
@@ -103,9 +104,10 @@ function _M.load(config_path)
       if type(config_error) == "table" then
         config_error = table.concat(config_error, ", ")
       end
-      cutils.logger:warn(string.format("%s: %s", config_key, config_error))
+      logger:warn(string.format("%s: %s", config_key, config_error))
     end
-    cutils.logger:error_exit("Invalid properties in given configuration file")
+    logger:error("Invalid properties in given configuration file")
+    os.exit(1)
   end
 
   -- Adding computed properties

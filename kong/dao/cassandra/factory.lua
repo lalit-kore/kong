@@ -24,13 +24,14 @@ end
 
 -- Instantiate a Cassandra Factory and all its DAOs for various entities
 -- @param `properties` Cassandra properties
-function CassandraFactory:new(properties, plugins)
+function CassandraFactory:new(properties, plugins, events_handler)
   self._properties = properties
+  self._events_handler = events_handler
   self.type = "cassandra"
   self.daos = {}
 
   -- Load core entities DAOs
-  for _, entity in ipairs({"apis", "consumers", "plugins"}) do
+  for _, entity in ipairs({"apis", "consumers", "plugins", "nodes"}) do
     self:load_daos(require("kong.dao.cassandra."..entity))
   end
 
@@ -63,7 +64,7 @@ end
 function CassandraFactory:load_daos(plugin_daos)
   local dao
   for name, plugin_dao in pairs(plugin_daos) do
-    dao = plugin_dao(self._properties)
+    dao = plugin_dao(self._properties, self._events_handler)
     dao._factory = self
     self.daos[name] = dao
     if dao._schema then

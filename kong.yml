@@ -52,6 +52,60 @@
 # admin_api_port: 8001
 
 ######
+## Port on which Kong will start dnsmasq.
+# dnsmasq_port: 8053
+
+######
+## Cluster settings
+# cluster:
+
+  ######
+  ## Instructs this node to auto-join the nodes that are sharing the same datastore on startup.
+  # auto-join: true
+
+  ######
+  ## Kong by default is configured to run in a LAN or Local Area Network. However, there are cases
+  ## in which a user may want to use Kong over the Internet or (WAN), or even just locally. 
+  ## To support setting the correct configuration values for each environment, you can select a 
+  ## timing profile. The current choices are "lan", "wan", and "local". This defaults to "lan". 
+  ## If a "lan" or "local" profile is used over the Internet, or a "local" profile over the LAN, 
+  ## a high rate of false failures is risked, as the timing constrains are too tight.
+  # profile: "lan"
+
+  ######
+  ## Address to bind network listeners to.
+  # bind: "0.0.0.0:7946"
+
+  ######
+  ## Network interface to bind to. Can be used instead of bind if the interface is known but 
+  ## not the address. If both are provided, then Kong verifies that the interface has the bind 
+  ## address that is provided.
+  # iface: ""
+
+  ######
+  ## Address to bind the RPC listener.
+  # rpc-addr: "127.0.0.1:7373"
+
+  ######
+  ## The advertise flag is used to change the address that we advertise to other nodes in the
+  ## cluster. By default, the bind address is advertised. However, in some cases (specifically 
+  ## NAT traversal), there may be a routable address that cannot be bound to. This flag enables 
+  ## gossiping a different address to support this
+  # advertise: ""
+
+  ######
+  ## Key for encrypting network traffic within Kong. Must be a base64-encoded 16-byte key.
+  # encrypt: "foo"
+
+  ######
+  ## You can optionally tag the current node with an arbitrary number of tags, in the form
+  ## of key-value pairs. 
+  # tags:
+  #   datacenter: "DC-US"
+  #   role: "api-gateway"
+  #   custom: "value"
+
+######
 ## Specify which database to use from the databases_available property.
 # database: cassandra
 
@@ -113,12 +167,6 @@
     ## If the cluster as authentication enabled, provide a user and a password here.
     # user: cassandra
     # password: cassandra
-
-######
-## Time (in seconds) for which entities from the database (APIs, plugins configurations...)
-## are cached by Kong. Increase this value if you want to lower the number of requests made
-## to your database.
-# database_cache_expiration: 5
 
 ######
 ## SSL certificates to use.
@@ -293,8 +341,5 @@ nginx: |
       location /robots.txt {
         return 200 'User-agent: *\nDisallow: /';
       }
-
-      # Do not remove, additional configuration placeholder for some plugins
-      # {{additional_configuration}}
     }
   }

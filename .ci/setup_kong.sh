@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KONG_VERSION=0.5.0
+KONG_VERSION=0.5.2
 
 sudo apt-get update
 
