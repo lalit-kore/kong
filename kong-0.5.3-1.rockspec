@@ -229,7 +229,13 @@ build = {
 
     ["kong.plugins.loggly.handler"] = "kong/plugins/loggly/handler.lua",
     ["kong.plugins.loggly.log"] = "kong/plugins/loggly/log.lua",
-    ["kong.plugins.loggly.schema"] = "kong/plugins/loggly/schema.lua"
+    ["kong.plugins.loggly.schema"] = "kong/plugins/loggly/schema.lua",
+    
+    ["kong.plugins.datadog.handler"] = "kong/plugins/datadog/handler.lua",
+    ["kong.plugins.datadog.log"] = "kong/plugins/datadog/log.lua",
+    ["kong.plugins.datadog.schema"] = "kong/plugins/datadog/schema.lua",
+    ["kong.plugins.datadog.statsd_logger"] = "kong/plugins/datadog/statsd_logger.lua"
+    
   },
   install = {
     conf = { "kong.yml" },
