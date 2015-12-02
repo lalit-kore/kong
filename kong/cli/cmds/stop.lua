@@ -19,6 +19,12 @@ if err then
   os.exit(1)
 end
 
+local status = services.check_status(config)
+if status == services.STATUSES.NOT_RUNNING then
+  logger:error("Kong is not running")
+  os.exit(1)
+end
+
 services.stop_all(config)
 
 logger:success("Stopped")

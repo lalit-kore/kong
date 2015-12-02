@@ -1,9 +1,12 @@
 local spec_helper = require "spec.spec_helpers"
 local yaml = require "yaml"
 local IO = require "kong.tools.io"
+local http_client = require "kong.tools.http_client"
 
 local TEST_CONF = spec_helper.get_env().conf_file
 local SERVER_CONF = "kong_TEST_SERVER.yml"
+
+local API_URL = spec_helper.API_URL
 
 local function replace_conf_property(key, value)
   local yaml_value = yaml.load(IO.read_file(TEST_CONF))
@@ -28,6 +31,24 @@ describe("CLI", function()
     after_each(function()
       pcall(spec_helper.stop_kong, SERVER_CONF)
     end)
+
+  describe("Generic", function()
+    it("should start up all the services", function()
+      assert.has_no.errors(function()
+        spec_helper.start_kong(TEST_CONF, true)
+      end)
+
+      local _, status = http_client.get(API_URL)
+      assert.equal(200, status) -- is running
+
+      assert.has.errors(function()
+        spec_helper.start_kong(TEST_CONF, true)
+      end)
+
+      local _, status = http_client.get(API_URL)
+      assert.equal(200, status) -- is running
+    end)
+  end)
 
   describe("Startup plugins check", function()
 

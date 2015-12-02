@@ -60,6 +60,7 @@ build = {
     ["kong.cli.cmds.reload"] = "kong/cli/cmds/reload.lua",
     ["kong.cli.cmds.restart"] = "kong/cli/cmds/restart.lua",
     ["kong.cli.cmds.version"] = "kong/cli/cmds/version.lua",
+    ["kong.cli.cmds.status"] = "kong/cli/cmds/status.lua",
     ["kong.cli.cmds.migrations"] = "kong/cli/cmds/migrations.lua",
     ["kong.cli.cmds.cluster"] = "kong/cli/cmds/cluster.lua",
     ["kong.cli.services.base_service"] = "kong/cli/services/base_service.lua",

@@ -3,6 +3,12 @@ local dao = require "kong.tools.dao_loader"
 
 local _M = {}
 
+_M.STATUSES = { 
+  ALL_RUNNING = "ALL_RUNNING",
+  SOME_RUNNING = "SOME_RUNNING",
+  NOT_RUNNINT = "NOT_RUNNING"
+}
+
 -- Services ordered by priority
 local services = {
   require "kong.cli.services.serf",
@@ -36,11 +42,31 @@ local function prepare_database(parsed_config)
   return true
 end
 
+function _M.check_status(configuration)
+  local running, not_running
+
+  for _, service in ipairs(services) do
+    if service(configuration.value, configuration.path):is_running() then
+      running = true
+    else
+      not_running = true
+    end
+  end
+
+  if running and not not_running then
+    return _M.STATUSES.ALL_RUNNING
+  elseif not_running and not running then
+    return _M.STATUSES.NOT_RUNNING
+  else
+    return _M.STATUSES.SOME_RUNNING
+  end
+end
+
 function _M.stop_all(configuration)
   -- Stop in reverse order to keep dependencies running
   for index = #services,1,-1 do
     services[index](configuration.value, configuration.path):stop()
-  end
+  end   
 end
 
 function _M.start_all(configuration)

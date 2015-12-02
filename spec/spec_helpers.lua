@@ -69,7 +69,7 @@ local function kong_bin(signal, conf_file)
   return result, exit_code
 end
 
-for _, signal in ipairs({ "start", "stop", "restart", "reload", "quit" }) do
+for _, signal in ipairs({ "start", "stop", "restart", "reload", "quit", "status" }) do
   _M[signal.."_kong"] = function(conf_file, skip_wait)
     return kong_bin(signal, conf_file)
   end
