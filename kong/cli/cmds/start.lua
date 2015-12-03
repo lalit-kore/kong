@@ -37,6 +37,6 @@ if ok then
 else
   services.stop_all(config)
   logger:error(err)
-  logger:err("Could not start Kong")
+  logger:error("Could not start Kong")
   os.exit(1)
 end

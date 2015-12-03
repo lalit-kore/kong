@@ -101,7 +101,7 @@ local Migrations = {
   },
   -- Clustering nodes
   {
-    name = "2015-11-23-175310_init_schema",
+    name = "2015-11-23-817313_nodes",
     up = function(options)
       return [[
         CREATE TABLE IF NOT EXISTS nodes(
