@@ -401,6 +401,7 @@ describe("Core Hooks", function()
       local cmd_args = {
         ["-node"] = "test_node",
         ["-bind"] = "127.0.0.1:9000",
+        ["-profile"] = "wan",
         ["-rpc-addr"] = "127.0.0.1:9001"
       }
       setmetatable(cmd_args, require "kong.tools.printable")
@@ -449,10 +450,11 @@ describe("Core Hooks", function()
       stop_serf()
 
       -- Triggering the status check
-      IO.os_execute("serf reachability")
+      local _, code = IO.os_execute("serf reachability")
+      assert.equals(1, code)
 
       -- Wait a little bit to propagate the data
-      os.execute("sleep 5")
+      os.execute("sleep 45")
 
       -- Check again
       local res, code = http_client.get(API_URL.."/cluster/")

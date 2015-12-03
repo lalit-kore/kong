@@ -31,7 +31,6 @@ return {
     type = "table",
     content = {
       ["auto-join"] = {type = "boolean", default = true},
-      ["profile"] = {type = "string", default = "lan", enum = { "lan", "local", "wan" }},
       ["bind"] = {type = "string", default = "0.0.0.0:7946"},
       ["iface"] = {type = "string", nullable = true},
       ["rpc-addr"] = {type = "string", default = "127.0.0.1:7373"},

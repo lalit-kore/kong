@@ -116,6 +116,7 @@ function Serf:start()
   end
   cmd_args["-auto-join"] = nil
   cmd_args["-log-level"] = "err"
+  cmd_args["-profile"] = "wan"
   cmd_args["-node"] = utils.get_hostname().."_"..self._parsed_config.cluster.bind
   cmd_args["-event-handler"] = "member-join,member-leave,member-failed,member-update,member-reap,user:"..EVENT_NAME.."="..self._script_path
 
