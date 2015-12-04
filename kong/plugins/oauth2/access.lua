@@ -30,6 +30,10 @@ local AUTHENTICATED_USERID = "authenticated_userid"
 local AUTHORIZE_URL = "^%s/oauth2/authorize(/?(\\?[^\\s]*)?)$"
 local TOKEN_URL = "^%s/oauth2/token(/?(\\?[^\\s]*)?)$"
 
+
+local http = require "socket.http"
+local ltn12 = require "ltn12"
+
 -- TODO: Expire token (using TTL ?)
 local function generate_token(conf, credential, authenticated_userid, scope, state, expiration, disable_refresh)
   local token_expiration = expiration or conf.token_expiration
@@ -296,6 +300,25 @@ local function issue_token(conf)
 
   -- Adding the state if it exists. If the state == nil then it won't be added
   response_params.state = state
+
+  -- Stopping other phases
+  ngx.ctx.stop_phases = true
+
+  -- posting to Kore Webhook
+  local resp = {}
+  local body, code, headers, status = http.request{
+      method = "POST",
+      url = "https://localhost/token",
+      source = ltn12.source.table(response_params),
+      headers = {
+          ["Accept"] = "*/*",
+          ["Accept-Encoding"] = "gzip, deflate",
+          ["Accept-Language"] = "en-us",
+          ["Content-Type"] = "application/x-www-form-urlencoded",
+          ["content-length"] = string.len(response_params)
+      },
+      sink = ltn12.sink.table(resp)
+  }
 
   -- Sending response in JSON format
   return responses.send(response_params[ERROR] and 400 or 200, response_params, false, {
