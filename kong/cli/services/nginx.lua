@@ -5,6 +5,7 @@ local ssl = require "kong.cli.utils.ssl"
 local constants = require "kong.constants"
 local syslog = require "kong.tools.syslog"
 local socket = require "socket"
+local http_client = require "kong.tools.http_client"
 
 local Nginx = BaseService:extend()
 

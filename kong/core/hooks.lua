@@ -21,68 +21,94 @@ local function invalidate(message_t)
   end
 end
 
-local function member_event(message_t)
-  -- On every membership event, resync the nodes list
+local function retrieve_member_address(name)
   local serf = require("kong.cli.services.serf")(configuration)
   local res, err = serf:invoke_signal("members", { ["-format"] = "json" })
   if err then
     ngx.log(ngx.ERR, err)
   else
-
-    -- Update all the existing nodes, or insert missing ones
     local members = cjson.decode(res).members
     for _, member in ipairs(members) do
-      local nodes, err = dao.nodes:find_by_keys({
-        address = member.addr
-      })
-      if err then
-        ngx.log(ngx.ERR, tostring(err))
-        return
-      end
-      if #nodes == 0 then
-        dao.nodes:insert({
-          name = stringy.strip(member.name),
-          address = stringy.strip(member.addr),
-          status = stringy.strip(member.status),
-          tags = member.tags
-        })
-      elseif #nodes == 1 then
-        local node = table.remove(nodes, 1)
-        node.name = member.name
-        node.status = member.status
-        node.tags = member.tags
-        local _, err = dao.nodes:update(node)
-        if err then
-          ngx.log(ngx.ERR, tostring(err))
-          return
-        end
+      if member.name == name then
+        return member.addr
       end
     end
+  end
+end
 
-    -- Remove members that don't exist anymore
-    local nodes, err = dao.nodes:find_all()
+local function parse_member(member_str)
+  if member_str and stringy.strip(member_str) ~= "" then
+    local result = {}
+    local index = 1
+    for v in member_str:gmatch("%S+") do
+      if index == 1 then
+        result.name = v
+      elseif index == 2 then
+        result.address = retrieve_member_address(result.name)
+      end
+      index = index + 1
+    end
+    return result
+  end
+end
+
+local function member_leave(message_t)
+  local member = parse_member(message_t.entity)
+
+  local _, err = dao.nodes:delete({
+    name = member.name
+  })
+  if err then
+    ngx.log(ngx.ERR, tostring(err))
+  end
+end
+
+local function member_update(message_t)
+  local member = parse_member(message_t.entity)
+
+  local nodes, err = dao.nodes:find_by_keys({
+    name = member.name
+  })
+  if err then
+    ngx.log(ngx.ERR, tostring(err))
+    return
+  end
+
+  if #nodes == 1 then
+    local node = table.remove(nodes, 1)
+    node.address = member.address
+    local _, err = dao.nodes:update(node)
     if err then
       ngx.log(ngx.ERR, tostring(err))
       return
     end
-    for _, node in ipairs(nodes) do
-      local found
-      for _, member in ipairs(members) do 
-        if member.addr == node.address then
-          found = true
-          break
-        end
-      end
-      if not found then
-        local _, err = dao.nodes:delete({
-          name = node.name
-        })
-        if err then
-          ngx.log(ngx.ERR, tostring(err))
-        end
-      end
-    end
+  end
+end
 
+local function member_join(message_t)
+  local member = parse_member(message_t.entity)
+
+  local nodes, err = dao.nodes:find_by_keys({
+    name = member.name
+  })
+  if err then
+    ngx.log(ngx.ERR, tostring(err))
+    return
+  end
+
+  if #nodes == 0 then -- Insert
+    local _, err = dao.nodes:insert({
+      name = stringy.strip(member.name),
+      address = stringy.strip(member.address)
+    })
+    if err then
+      ngx.log(ngx.ERR, tostring(err))
+      return
+    end
+  elseif #nodes == 1 then -- Update
+    member_update(message_t, "alive")
+  else
+    error("Inconsistency error. More than one node found with name "..member.name)
   end
 end
 
@@ -104,18 +130,18 @@ return {
     end
   end,
   [events.TYPES["MEMBER-JOIN"]] = function(message_t)
-    member_event(message_t)
+    member_join(message_t)
   end,
   [events.TYPES["MEMBER-LEAVE"]] = function(message_t)
-    member_event(message_t)
+    member_leave(message_t)
   end,
   [events.TYPES["MEMBER-FAILED"]] = function(message_t)
-    member_event(message_t)
+    member_update(message_t)
   end,
   [events.TYPES["MEMBER-UPDATE"]] = function(message_t)
-    member_event(message_t)
+    member_update(message_t)
   end,
   [events.TYPES["MEMBER-REAP"]] = function(message_t)
-    member_event(message_t)
+    member_update(message_t)
   end
 }

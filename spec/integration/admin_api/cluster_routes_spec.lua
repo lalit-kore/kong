@@ -29,12 +29,11 @@ describe("Admin API", function()
         assert.equal(1, #body.data)
 
         local member = table.remove(body.data, 1)
-        assert.equal(5, utils.table_size(member))
+        assert.equal(4, utils.table_size(member))
         assert.truthy(member.address)
         assert.truthy(member.status)
         assert.truthy(member.name)
         assert.truthy(member.created_at)
-        assert.truthy(member.tags)
 
         assert.equal("alive", member.status)
       end)

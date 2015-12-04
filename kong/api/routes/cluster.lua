@@ -1,10 +1,30 @@
 local crud = require "kong.api.crud_helpers"
 local responses = require "kong.tools.responses"
+local cjson = require "cjson"
 
 return {
   ["/cluster/"] = {
     GET = function(self, dao_factory)
-      crud.paginated_set(self, dao_factory.nodes)
+      local serf = require("kong.cli.services.serf")(configuration)
+      local res, err = serf:invoke_signal("members", { ["-format"] = "json" })
+      if err then
+        return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+      else
+        local members = cjson.decode(res)
+        local result = {
+          total = #members,
+          data = {}
+        }
+        local members = cjson.decode(res).members
+        for _, v in pairs(members) do
+          table.insert(result.data, {
+            name = v.name,
+            address = v.addr,
+            status = v.status
+          })
+        end
+        return responses.send_HTTP_OK(result)
+      end
     end,
 
     POST = function(self, dao_factory)
@@ -21,6 +41,7 @@ return {
       end
     end
   },
+  
   ["/cluster/events/"] = {
     POST = function(self, dao_factory)
       ngx.log(ngx.DEBUG, " received cluster event "..(self.params.type and self.params.type or "UNKNOWN"))

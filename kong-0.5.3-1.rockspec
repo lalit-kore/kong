@@ -15,7 +15,6 @@ dependencies = {
   "luasec ~> 0.5-2",
 
   "lua_uuid ~> 0.1-8",
-  "lua_ip ~> 0.1-2",
   "luatz ~> 0.3-1",
   "yaml ~> 1.1.2-1",
   "lapis ~> 1.3.1-1",
@@ -75,6 +74,7 @@ build = {
     ["kong.tools.syslog"] = "kong/tools/syslog.lua",
     ["kong.tools.ngx_stub"] = "kong/tools/ngx_stub.lua",
     ["kong.tools.printable"] = "kong/tools/printable.lua",
+    ["kong.tools.cluster"] = "kong/tools/cluster.lua",
     ["kong.tools.responses"] = "kong/tools/responses.lua",
     ["kong.tools.timestamp"] = "kong/tools/timestamp.lua",
     ["kong.tools.migrations"] = "kong/tools/migrations.lua",
@@ -90,6 +90,7 @@ build = {
     ["kong.core.plugins_iterator"] = "kong/core/plugins_iterator.lua",
     ["kong.core.hooks"] = "kong/core/hooks.lua",
     ["kong.core.reports"] = "kong/core/reports.lua",
+    ["kong.core.cluster"] = "kong/core/cluster.lua",
     ["kong.core.events"] = "kong/core/events.lua",
 
     ["kong.dao.cassandra.schema.migrations"] = "kong/dao/cassandra/schema/migrations.lua",

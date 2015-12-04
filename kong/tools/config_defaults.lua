@@ -35,8 +35,7 @@ return {
       ["iface"] = {type = "string", nullable = true},
       ["rpc-addr"] = {type = "string", default = "127.0.0.1:7373"},
       ["advertise"] = {type = "string", nullable = true},
-      ["encrypt"] = {type = "string", nullable = true},
-      ["tags"] = {type = "table", default = {}, nullable = true}
+      ["encrypt"] = {type = "string", nullable = true}
     }
   },
   ["database"] = {type = "string", default = "cassandra"},

@@ -2,8 +2,8 @@ local BaseService = require "kong.cli.services.base_service"
 local logger = require "kong.cli.utils.logger"
 local IO = require "kong.tools.io"
 local stringy = require "stringy"
-local utils = require "kong.tools.utils"
 local cjson = require "cjson"
+local cluster_utils = require "kong.tools.cluster"
 local dao = require "kong.tools.dao_loader"
 
 local Serf = BaseService:extend()
@@ -20,6 +20,7 @@ function Serf:new(configuration_value)
   self._script_path = nginx_working_dir
                         ..(stringy.endswith(nginx_working_dir, "/") and "" or "/")
                         .."serf_event.sh"
+  self._dao_factory = dao.load(self._parsed_config)
   Serf.super.new(self, SERVICE_NAME, nginx_working_dir)
 end
 
@@ -66,21 +67,31 @@ echo $COMMAND | ]]..luajit_path..[[
   return true
 end
 
-function Serf:_autojoin()
-  if self._parsed_config.cluster["auto-join"] then 
-    local dao_factory = dao.load(self._parsed_config)
-    local nodes, err = dao_factory.nodes:find_by_keys({status = "alive"})
+function Serf:_autojoin(current_node_name)
+  if self._parsed_config.cluster["auto-join"] then
+    -- Delete current node just in case it was there
+    local _, err = self._dao_factory.nodes:delete({
+      name = current_node_name
+    })
+    if err then
+      return false, tostring(err)
+    end
+
+    local nodes, err = self._dao_factory.nodes:find_by_keys()
     if err then
       return false, tostring(err)
     else
       if #nodes == 0 then
-        logger:warn("No nodes found to auto-join")
+        logger:warn("Cannot auto-join the cluster because no nodes were found")
       else
         local joined
         for _, v in ipairs(nodes) do
           local _, err = self:invoke_signal("join", {v.address})
           if err then
-            logger:warn("Cannot join "..v.address)
+            logger:warn("Cannot join "..v.address..". If the node does not exist anymore it will be automatically purged.")
+            if err then
+              return false, tostring(err)
+            end
           else
             logger:info("Successfully auto-joined "..v.address)
             joined = true
@@ -88,7 +99,8 @@ function Serf:_autojoin()
           end
         end
         if not joined then
-          return false, "Could not join the existing cluster"
+          --return false, "Could not join the existing cluster"
+          logger:warn("Could not join the existing cluster")
         end
       end
     end
@@ -117,20 +129,11 @@ function Serf:start()
   cmd_args["-auto-join"] = nil
   cmd_args["-log-level"] = "err"
   cmd_args["-profile"] = "wan"
-  cmd_args["-node"] = utils.get_hostname().."_"..self._parsed_config.cluster.bind
+  local node_name = cluster_utils.get_node_name(self._parsed_config)
+  cmd_args["-node"] = node_name
   cmd_args["-event-handler"] = "member-join,member-leave,member-failed,member-update,member-reap,user:"..EVENT_NAME.."="..self._script_path
 
   local str_cmd_args = tostring(cmd_args)
-
-  -- Attach tags
-  if self._parsed_config.cluster.tags then
-    for k, v in pairs(self._parsed_config.cluster.tags) do
-      if stringy.strip(v) ~= "" then
-        str_cmd_args = str_cmd_args.." -tag="..k.."="..v
-      end
-    end
-  end
-
   local res, code = IO.os_execute("nohup "..cmd.." agent "..str_cmd_args.." > "..LOG_FILE.." 2>&1 & echo $! > "..self._pid_file_path)
   if code == 0 then
 
@@ -144,7 +147,7 @@ function Serf:start()
       logger:info(string.format([[serf ..............%s]], str_cmd_args))
 
       -- Auto-Join nodes
-      return self:_autojoin()
+      return self:_autojoin(node_name)
     else
       -- Get last error message
       local parts = stringy.split(IO.read_file(LOG_FILE), "\n")

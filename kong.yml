@@ -88,14 +88,6 @@
   ## Key for encrypting network traffic within Kong. Must be a base64-encoded 16-byte key.
   # encrypt: "foo"
 
-  ######
-  ## You can optionally tag the current node with an arbitrary number of tags, in the form
-  ## of key-value pairs. 
-  # tags:
-  #   datacenter: "DC-US"
-  #   role: "api-gateway"
-  #   custom: "value"
-
 ######
 ## Specify which database to use from the databases_available property.
 # database: cassandra
@@ -180,7 +172,7 @@
 ## /!\ BE CAREFUL
 nginx: |
   worker_processes auto;
-  error_log logs/error.log error;
+  error_log logs/error.log info;
   daemon on;
 
   worker_rlimit_nofile {{auto_worker_rlimit_nofile}};
@@ -233,7 +225,8 @@ nginx: |
     lua_code_cache on;
     lua_max_running_timers 4096;
     lua_max_pending_timers 16384;
-    lua_shared_dict locks 100k;
+    lua_shared_dict reports_locks 100k;
+    lua_shared_dict cluster_locks 100k;
     lua_shared_dict cache {{memory_cache_size}}m;
     lua_socket_log_errors off;
     {{lua_ssl_trusted_certificate}}

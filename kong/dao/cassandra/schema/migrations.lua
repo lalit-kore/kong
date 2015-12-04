@@ -107,14 +107,11 @@ local Migrations = {
         CREATE TABLE IF NOT EXISTS nodes(
           name text,
           address text,
-          status text,
-          tags text, -- serialized tags
           created_at timestamp,
           PRIMARY KEY (name)
-        );
+        ) WITH default_time_to_live = 86400;
 
         CREATE INDEX IF NOT EXISTS ON nodes(address);
-        CREATE INDEX IF NOT EXISTS ON nodes(status);
       ]]
     end,
     down = function(options)
