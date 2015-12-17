@@ -31,8 +31,10 @@ local AUTHORIZE_URL = "^%s/oauth2/authorize(/?(\\?[^\\s]*)?)$"
 local TOKEN_URL = "^%s/oauth2/token(/?(\\?[^\\s]*)?)$"
 
 
-local http = require "socket.http"
+local https = require "ssl.https"
 local ltn12 = require "ltn12"
+local cjson = require "cjson"
+local jwt_encoder = require "kong.plugins.jwt.jwt_parser"
 
 -- TODO: Expire token (using TTL ?)
 local function generate_token(conf, credential, authenticated_userid, scope, state, expiration, disable_refresh)
@@ -218,10 +220,12 @@ local function retrieve_client_credentials(parameters)
 end
 
 local function issue_token(conf)
+    ngx.say(tostring(cjson.encode(conf)))
   local response_params = {}
 
   local parameters = retrieve_parameters() --TODO: Also from authorization header
   local state = parameters[STATE]
+  local kore_userid
 
   if not is_https(conf) then
     response_params = {[ERROR] = "access_denied", error_description = "You must use HTTPS"}
@@ -256,6 +260,7 @@ local function issue_token(conf)
           response_params = {[ERROR] = "invalid_request", error_description = "Invalid "..CODE}
         else
           response_params = generate_token(conf, client, authorization_code.authenticated_userid, authorization_code.scope, state)
+          kore_userid = authorization_code.authenticated_userid
         end
       elseif grant_type == GRANT_CLIENT_CREDENTIALS then
         -- Only check the provision_key if the authenticated_userid is being set
@@ -305,20 +310,39 @@ local function issue_token(conf)
   ngx.ctx.stop_phases = true
 
   -- posting to Kore Webhook
-  local resp = {}
-  local body, code, headers, status = http.request{
+
+--  ngx.say(tostring(cjson.encode(parameters)))
+  local jwtoken = jwt_encoder.encode(response_params,conf.provision_key)
+
+  local reqbody = "id_token=" .. jwtoken
+  for key in pairs(response_params) do
+    local pair = key .. "=" ..  response_params[key]
+        reqbody = reqbody .. "&" .. pair
+  end
+
+--  ngx.say(tostring(reqbody))
+--  ngx.say(tostring(cjson.encode(response_params)))
+  local body = {}
+  local resp, code, headers, status = https.request{
       method = "POST",
-      url = "https://localhost/token",
-      source = ltn12.source.table(response_params),
+      url = "https://localhost:443/token",
+      source = ltn12.source.string(reqbody),
       headers = {
           ["Accept"] = "*/*",
           ["Accept-Encoding"] = "gzip, deflate",
           ["Accept-Language"] = "en-us",
           ["Content-Type"] = "application/x-www-form-urlencoded",
-          ["content-length"] = string.len(response_params)
+          ["Content-length"] = string.len(reqbody),
+          ["x-authenticated-userid"] = kore_userid,
+          ["client_id"] = parameters.client_id
       },
-      sink = ltn12.sink.table(resp)
+      sink = ltn12.sink.table({})
   }
+
+--  ngx.say(tostring(resp))
+--  ngx.say(tostring(code))
+--  ngx.say(tostring(cjson.encode(headers)))
+--  ngx.say(tostring(status))
 
   -- Sending response in JSON format
   return responses.send(response_params[ERROR] and 400 or 200, response_params, false, {
