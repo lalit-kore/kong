@@ -220,9 +220,7 @@ local function retrieve_client_credentials(parameters)
 end
 
 local function issue_token(conf)
-    ngx.say(tostring(cjson.encode(conf)))
   local response_params = {}
-
   local parameters = retrieve_parameters() --TODO: Also from authorization header
   local state = parameters[STATE]
   local kore_userid
@@ -311,7 +309,6 @@ local function issue_token(conf)
 
   -- posting to Kore Webhook
 
---  ngx.say(tostring(cjson.encode(parameters)))
   local jwtoken = jwt_encoder.encode(response_params,conf.provision_key)
 
   local reqbody = "id_token=" .. jwtoken
@@ -320,8 +317,6 @@ local function issue_token(conf)
         reqbody = reqbody .. "&" .. pair
   end
 
---  ngx.say(tostring(reqbody))
---  ngx.say(tostring(cjson.encode(response_params)))
   local body = {}
   local resp, code, headers, status = https.request{
       method = "POST",
@@ -338,11 +333,6 @@ local function issue_token(conf)
       },
       sink = ltn12.sink.table({})
   }
-
---  ngx.say(tostring(resp))
---  ngx.say(tostring(code))
---  ngx.say(tostring(cjson.encode(headers)))
---  ngx.say(tostring(status))
 
   -- Sending response in JSON format
   return responses.send(response_params[ERROR] and 400 or 200, response_params, false, {
